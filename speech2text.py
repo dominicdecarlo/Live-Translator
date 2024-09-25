@@ -5,6 +5,7 @@ from googletrans import Translator
 
 translator = Translator()
 r=sr.Recognizer()
+engine = pyttsx3.init()
 
 exit_flag = False
 
@@ -37,9 +38,15 @@ def output_text(text):
         translated_text = translated.text
         with open("output.txt", "a") as f:
             f.write(f"Original: {text} \n Translated: {translated_text} \n")
+
+            speak_text(translated_text)
+
     except Exception as e:
         print(f"Error writing to file: {e}")
 
+def speak_text(text):
+    engine.say(text)
+    engine.runAndWait()
 
 def start_listening():
     global exit_flag
