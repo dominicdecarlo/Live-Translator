@@ -6,41 +6,34 @@ from googletrans import Translator
 translator = Translator()
 r=sr.Recognizer()
 
-def record_text():
-    while True:
-        try:
-            with sr.Microphone(device_index=1) as source:
-                r.adjust_for_ambient_noise(source, duration=0.1)
-                print("Listening...")
+exit_flag = False
 
-                audio2 = r.listen(source, timeout=5, phrase_time_limit=5)
+def process_audio(recognizer, audio):
+    global exit_flag  # access the exit flag
+    try:
+        #recognize speech
+        MyText = recognizer.recognize_google(audio)
+        print(f"Recognized: {MyText}")
 
-                MyText = r.recognize_google(audio2)
-                print(f"Recognized: {MyText}")
-
-                if MyText.lower() == "exit":
-                    print("Exit command recognized. Stopping...")
-                    break
-                
-                return MyText
-
-        except sr.WaitTimeoutError:
-            print("Timeout reached, no speech detected. Retrying...")
-            return None
+        if MyText.lower() == "exit":
+            print("Exit command recognized. Stopping...")
+            exit_flag = True
+        else:
+            #put the text in a file output.txt
+            output_text(MyText)
             
-        except sr.RequestError as e:
-            print("Could not request results; {0}".format(e))
+    except sr.RequestError as e:
+        print(f"Could not request results; {e}")
 
-        except sr.UnknownValueError:
-            print("Unknown error occurred")
+    except sr.UnknownValueError:
+        print("Could not understand audio.")
 
-        time.sleep(1)
 
 
 def output_text(text):
     try:
 
-        translated = translator.translate(text, dest='es')  # Change 'es' to your target language code
+        translated = translator.translate(text, dest='es')  #change 'es' to your target language code
         translated_text = translated.text
         with open("output.txt", "a") as f:
             f.write(f"Original: {text} \n Translated: {translated_text} \n")
@@ -48,15 +41,29 @@ def output_text(text):
         print(f"Error writing to file: {e}")
 
 
-while True:
-    text = record_text()
+def start_listening():
+    global exit_flag
 
-    if text.lower() == "exit":
-        print("Exiting program.")
-        break
+    mic = sr.Microphone(device_index=1)
+    #adjust for ambient noise
+    with mic as source:
+        r.adjust_for_ambient_noise(source, duration=0.1)
 
-    output_text(text)
+    print("Listening in the background...")
 
-    time.sleep(1)
+        #start non-blocking listening in the background
+    stop_listening = r.listen_in_background(mic, process_audio)
 
-    print("Ready for next input.")
+        #keep the program running until exit is detected
+    while not exit_flag:
+        time.sleep(0.1)  # Keep the loop running
+
+        #stop the background listener when exit is detected
+    stop_listening(wait_for_stop=False)
+
+if __name__ == "__main__":
+    #start the background listening
+    exit_flag = False
+    start_listening()
+
+    print("Program has exited.")
