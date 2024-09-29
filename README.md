@@ -6,6 +6,6 @@ pip install googletrans==4.0.0-rc1
 pip install PyAudio
 pip install flash
 
-\n
+
 
 After that, run the index.html file in the static folder
